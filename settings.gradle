@@ -1,0 +1,1 @@
+include ':app', ':plugin', ':jcenter-publish-plugin', ':extension-plugin', ':buildSrc', ':secondcomponent'

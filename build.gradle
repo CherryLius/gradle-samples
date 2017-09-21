@@ -1,0 +1,393 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+            url uri('F:/Android/repos')
+        }
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.3.3'
+        classpath 'cherry:hellotask:1.0.0'
+        classpath 'cherry:extension-plugin:1.0'
+        classpath 'cherry.android.plugins:jcenter-publish-plugin:1.0.0'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+allprojects {
+    repositories {
+        flatDir {
+            dirs '../release/aar' //this way we can find the .aar file in  folder
+        }
+        jcenter()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+
+task helloWorld << {
+    println "Hello Gradle"
+}
+
+//task copyFile(dependsOn: helloWorld, type: Copy) {
+//    from 'xml'
+//    into 'destination'
+//}
+
+task showTasks << {
+    println tasks.class
+    println tasks.size()
+}
+
+tasks.create(name: 'hello1') << {
+    println 'hello1'
+}
+
+task hello2 << {
+    println 'hello2'
+}
+
+hello2.dependsOn hello1
+
+task showDescription1 << {
+    description = 'this is task showDescription1'
+    println description
+}
+
+task showDescription2 << {
+    println description
+}
+
+showDescription2.description = 'this is task showDescription2'
+
+task showDescription3 << {
+    println description
+}
+
+showDescription3 {
+    description = 'this is task showDescription3'
+}
+
+//class HelloWorldTask extends DefaultTask {
+//    //标记为@Optional，表示在配置该Task时，message是可选的
+//    @Optional
+//    String message = 'I am davenkin'
+//
+//    //@TaskAction表示该Task要执行的动作，即在调用该Task时，hello()方法将被执行
+//    @TaskAction
+//    def hello() {
+//        println "hello world $message"
+//    }
+//}
+//
+//task helloTask(type: HelloWorldTask)
+//
+//task helloTask1(type: HelloWorldTask) {
+//    message = 'I am a programmer'
+//}
+task helloTask(type: cherry.HelloWorldTask)
+
+//任务依赖
+task count << {
+    4.times { print "$it " }
+}
+
+task intro(dependsOn: count) << {
+    println "I'm Gradle!"
+}
+/**
+ * 延迟依赖
+ * 添加依赖 task 也可以不必首先声明被依赖的 task
+ * 当引用的任务尚未定义的时候不可使用短标记法来运行任务
+ */
+task taskX(dependsOn: 'taskY') << {
+    println 'taskX'
+}
+task taskY() << {
+    println 'taskY'
+}
+/**
+ * 动态任务
+ */
+4.times { counter ->
+    task "task$counter" << {
+        println "I'm task number $counter"
+    }
+}
+/**
+ * 任务操纵
+ * 一旦任务被创建后，任务之间可以通过 API 进行相互访问。
+ * 比如可以增加一些依赖
+ */
+//通过 API 进行任务之间的通信 - 增加依赖
+task0.dependsOn task2, task3
+//通过 API 进行任务之间的通信 - 增加任务行为
+task taskHello << {
+    println 'Hello Earth'
+}
+
+taskHello.doFirst {
+    println 'Hello Venus'
+}
+
+taskHello.doLast {
+    println 'Hello Mars'
+}
+// << 操作符是doLast的简写
+taskHello << {
+    println 'Hello Jupiter'
+}
+/**
+ * 短标记法
+ * 如上：每个任务都是一个脚本属性，可以访问
+ */
+taskHello.doLast {
+    println "Greetings from the $taskHello.name task."
+}
+/**
+ * 增加自定义属性
+ * 不仅仅局限于任务上，还可以做更多事情
+ */
+task myTask {
+    ext.myProperty = 'myValue'
+}
+task printTaskProperties << {
+    println myTask.myProperty
+}
+/**
+ * 调用Ant任务
+ * Ant 任务是 Gradle 中的一等公民。
+ * Gradle 借助 Groovy 对 Ant 任务进行了优秀的整合。
+ * Gradle 自带了一个 AntBuilder，在 Gradle 中调用 Ant 任务
+ * 比在 build.xml 中调用更加的方便和强大。
+ * 通过下面的例子你可以学到如何调用一个 Ant 任务以及如何与 Ant 中的属性进行通信
+ */
+//利用 AntBuilder 执行 ant.loadfile
+task loadfile << {
+    fileList('app/src/main') each { File file ->
+        ant.loadfile(srcFile: file, property: file.name)
+        println "*****$file.name*****"
+        println "${ant.properties[file.name]}"
+    }
+}
+/**
+ * 方法抽取
+ * 利用方法组织脚本逻辑
+ */
+task checksum << {
+    fileList('app').each { File file ->
+        ant.checksum(file: file, property: "cs_$file.name")
+        println "$file.name Checksum: ${ant.properties["cs_$file.name"]}"
+    }
+}
+
+File[] fileList(dir) {
+    file(dir).listFiles({ file ->
+        file.isFile()
+    } as FileFilter).sort()
+}
+/**
+ * 定义默认任务
+ * Gradle允许在脚本中定义多个默认任务
+ * gradlew.bat -q执行默认任务
+ */
+defaultTasks 'cleanTask', 'runTask'
+task cleanTask << {
+    println 'Default Cleaning'
+}
+task runTask << {
+    println 'Default Running'
+}
+task other << {
+    println "I'm not a default task!"
+}
+//Configure by DAG
+//依赖任务的不同输出
+//执行gradlew.bat -q distribution | gradlew.bat -q release
+task distribution << {
+    println "We build the zip with version=$version"
+}
+task release(dependsOn: distribution) << {
+    println 'We release now'
+}
+//whenReady 会在已发布的任务之前影响到已发布任务的执行。
+// 即使已发布的任务不是主要任务(也就是说，即使这个任务不是通过命令行直接调用)
+gradle.taskGraph.whenReady { taskGraph ->
+    if (taskGraph.hasTask(release)) {
+        version = '1.0'
+    } else {
+        version = '1.0-SNAPSHOT'
+    }
+}
+/**
+ * Gradle 命令行
+ * gradlew task1 task2 :任务依次执行，且每个任务只执行一次
+ * gradlew task1 x task2 :排除任务， 依赖的task2不会执行
+ * --continue 失败后继续调用
+ * --info --debug --stacktrace
+ * gradlew tas :简化任务名,无需输入任务的全名
+ * 只需提供足够的可以唯一区分出该任务的字符即可
+ * gradlew HW :简化驼峰任务名,任务中每个单词的首字母进行调用
+ *
+ * 选择构建位置
+ * 调用 gradle 时，默认情况下总是会构建当前目录下的文件，可以使用-b 参数选择构建的文件
+ * gradle -q -b subdir/myproject.gradle hello
+ *
+ * 选择构建目录
+ * 使用 -p 参数来指定构建的目录，例如在多项目构建中你可以用 -p 来替代 -b 参数。
+ * gradle -q -p subdir hello
+ *
+ * 收集项目信息
+ * gradle -q projects
+ *
+ * 为项目添加描述信息.
+ * build.gradle
+ * description = 'The shared API for the application'
+ *
+ * 获取任务信息
+ * gradle -q tasks
+ *
+ * 更改任务报告内容
+ * build.gradle
+ * dists {*  description = 'Builds the distribution'
+ *  group = 'build'
+ *}*
+ * --all 参数来收集更多任务信息,列出项目中所有任务以及任务之间的依赖关系。
+ * gradle -q tasks --all
+ *
+ * 执行 gradle help --task someTask 可以显示指定任务的详细信息
+ * 执行 gradle dependencies 会列出项目的依赖列表
+ *
+ * 过滤依赖信息
+ * gradle -q api:dependencies --configuration testCompile
+ *
+ * 获取特定依赖
+ * gradle -q webapp:dependencyInsight --dependency groovy --configuration compile
+ *
+ * 属性信息
+ * gradle -q api:properties
+ *
+ *  _________________________________________
+ * |名称	        |类型	    |默认值
+ * |project	    |Project	|Project实例
+ * |name	    |String	    |项目目录的名称
+ * |path	    |String	    |项目的绝对路径
+ * |description	|String	    |项目的描述
+ * |projectDir	|File	    |包含生成脚本的目录
+ * |buildDir	|File	    |projectDir/build
+ * |group	    |Object	    |未指定
+ * |version	    |Object	    |未指定
+ * |ant	        |AntBuilder	|AntBuilder实例
+ *  _________________________________________
+ */
+
+/**
+ * 局部变量
+ */
+def dest = 'dest'
+task copy(type: Copy) {
+    from 'source'
+    into dest
+}
+/**
+ * 额外属性
+ * Gradle 的域模型中，所有增强的对象都可以容纳用户定义的额外的属性。
+ * 这包括但并不限于项目（project）、任务（task）和源码集（source set）。
+ * 额外的属性可以通过所属对象的 ext 属性进行添加，读取和设置。
+ * 或者，可以使用 ext 块同时添加多个属性
+ */
+ext {
+    springVersion = "3.1.0.RELEASE"
+    emailNotification = "build@master.org"
+}
+/**
+ * 包委托（delegate）
+ *
+ * 每个闭包都有一个委托对象，
+ * Groovy 使用它来查找变量和方法的引用，
+ * 而不是作为闭包的局部变量或参数。
+ * Gradle 在配置闭包中使用到它，
+ * 把委托对象设置为被配置的对象。
+ */
+/*dependencies {
+    assert delegate == project.dependencies
+    compile('junit:junit:4.11')
+    delegate.compile('junit:junit:4.11')
+}*/
+
+/**
+ * 使用 gradle.properties 文件设置属性
+ * gradle.properties
+ *  gradlePropertiesProp=gradlePropertiesValue
+ *  systemProjectProp=shouldBeOverWrittenBySystemProp
+ *  envProjectProp=shouldBeOverWrittenByEnvProp
+ *  systemProp.system=systemValue
+ *
+ * build.gradle
+ *  task printProps << {println commandLineProjectProp
+ *      println gradlePropertiesProp
+ *      println systemProjectProp
+ *      println envProjectProp
+ *      println System.properties['system']
+ *}*
+ * 执行并添加属性
+ *  gradle -q -PcommandLineProjectProp=commandLineProjectPropValue
+ *  -Dorg.gradle.project.systemProjectProp=systemPropertyValue printProps
+ */
+
+/**
+ * hasProperty('propertyName')
+ * 属性检查
+ */
+class TaskPool {
+    def map = [:]
+
+    def push(String name, Task t) {
+        map.put(name, t)
+    }
+
+    def get(name) {
+        map.get(name)
+    }
+}
+
+def taskPool = new TaskPool()
+
+def task(Task t) {
+    taskPool.put(t.name, t)
+    t.execute()
+}
+
+class Task {
+    def name
+    def closure
+
+    def execute() {
+        println "task $name start >>"
+        closure()
+        println "task $name end <<"
+    }
+}
+
+def invokeMethod(name, args) {
+    println "call method $name()"
+    t = taskPool.get(name)
+    if (!t) {
+        if (args[0] instanceof Closure) {
+            t = new Task('name': name, 'closure': args[0])
+        }
+    }
+    t
+}
+
+task helloworld {
+    println 'hello world!'
+}
+
+

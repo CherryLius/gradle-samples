@@ -1,0 +1,38 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+dependencies {
+    //gradle sdk
+    compile gradleApi()
+    //groovy sdk
+    compile localGroovy()
+    compile 'com.android.tools.build:gradle:2.3.2'
+    //自动化maven打包插件
+    compile 'com.github.dcendents:android-maven-gradle-plugin:1.5'
+    //自动上传至Bintray平台插件
+    compile "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.2"
+}
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+
+tasks.withType(Javadoc) {
+    options {
+        encoding 'UTF-8'
+        charSet 'UTF-8'
+        links "http://docs.oracle.com/javase/7/docs/api"
+    }
+}
+
+group = 'cherry.android.plugins'
+version = '1.0.0'
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: uri('F:/Android/repos'))
+        }
+    }
+}

@@ -1,0 +1,22 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+dependencies {
+    compile gradleApi()
+    compile localGroovy()
+}
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+version = '1.0.0'
+group = 'cherry'
+archivesBaseName = 'hellotask'
+
+uploadArchives {
+    repositories.mavenDeployer {
+        repository(url: uri('F:/Android/repos'))
+    }
+}
