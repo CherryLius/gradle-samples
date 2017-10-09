@@ -46,9 +46,7 @@ public class ModulePlugin implements Plugin<Project> {
         }
 
         if (asApplication) {
-            project.apply {
-                plugin: 'com.android.application'
-            }
+            project.apply plugin: 'com.android.application'
             println("apply as application. ${projectName}")
             if (projectName != rootMainModule) {
                 project.android.sourceSets {
@@ -63,17 +61,8 @@ public class ModulePlugin implements Plugin<Project> {
                 compileModule(project, ext, assembleTask)
             }
         } else {
-            project.apply {
-                plugin: 'com.android.library'
-            }
+            project.apply plugin: 'com.android.library'
             println("apply as library. ${projectName}")
-            if (projectName != rootMainModule) {
-                project.android.sourceSets {
-                    main {
-                        manifest.srcFile 'src/main/release/AndroidManifest.xml'
-                    }
-                }
-            }
             project.afterEvaluate {
                 Task assembleReleaseTask = project.tasks.findByPath('assembleRelease')
                 System.err.println("task=" + assembleReleaseTask)
