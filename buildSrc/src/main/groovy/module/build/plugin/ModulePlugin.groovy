@@ -1,4 +1,4 @@
-package module.plugin
+package module.build.plugin
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -33,6 +33,15 @@ public class ModulePlugin implements Plugin<Project> {
             println("mainModule=${mainModule}")
         }
 
+        def aarPath = project.rootProject.property(AAR_PATH)
+        project.rootProject.allprojects {
+            repositories {
+                flatDir {
+                    dirs "../${aarPath}"
+                }
+            }
+        }
+
         final def asApplication
         if (project.hasProperty(AS_APPLICATION)) {
             asApplication = Boolean.parseBoolean(project.property(AS_APPLICATION))
@@ -55,7 +64,7 @@ public class ModulePlugin implements Plugin<Project> {
                         java.srcDirs += 'src/main/debug/java'
                     }
                 }
-                println("apply release in module: [${projectName}]")
+                println("apply debug in module: [${projectName}]")
             }
             if (assembleTask.isAssemble && projectName == mainModule) {
                 compileModule(project, ext, assembleTask)
@@ -65,11 +74,10 @@ public class ModulePlugin implements Plugin<Project> {
             println("apply as library. ${projectName}")
             project.afterEvaluate {
                 Task assembleReleaseTask = project.tasks.findByPath('assembleRelease')
-                System.err.println("task=" + assembleReleaseTask)
+                System.err.println("library aR task=" + assembleReleaseTask)
                 if (assembleReleaseTask != null) {
                     assembleReleaseTask.doLast {
                         File inFile = project.file("build/outputs/aar/${projectName}-release.aar")
-                        def String aarPath = project.rootProject.property(AAR_PATH)
                         File outFile = project.rootProject.file(aarPath)
                         File desFile = project.file("${projectName}-release.aar")
                         project.copy {
@@ -152,7 +160,7 @@ public class ModulePlugin implements Plugin<Project> {
         taskNames.each { task ->
             println("task=${task}")
             if (task.toUpperCase().contains('ASSEMBLE')
-                    || task == 'aR'
+                    || task.contains('aR')
                     || task.toUpperCase().contains('RESGUARD')) {
                 if (task.toUpperCase().contains('DEBUG'))
                     assembleTask.isDebug = true

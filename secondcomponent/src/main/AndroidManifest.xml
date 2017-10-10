@@ -1,3 +1,7 @@
-<manifest package="cherry.android.secondcomponent">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="cherry.android.secondcomponent">
 
+    <application>
+        <activity android:name=".SecondActivity" />
+    </application>
 </manifest>
